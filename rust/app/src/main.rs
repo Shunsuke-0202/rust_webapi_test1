@@ -12,7 +12,8 @@ use diesel::mysql::MysqlConnection;
 use schema::accounts;
 use models::account_models::{PostReqAccount,NewAccount};
 
-use actix_web::{get,post,web,App,HttpResponse,HttpServer,Responder};
+use actix_cors::Cors;
+use actix_web::{get,post,http,web,App,HttpResponse,HttpServer,Responder};
 use serde::{Deserialize,Serialize};
 
 #[get("/")]
@@ -44,9 +45,20 @@ async fn post_index(user:web::Json<PostReqAccount>)->impl Responder{
 #[actix_web::main]
 async fn main()->std::io::Result<()>{
     HttpServer::new(||{
+        //CORSに対応させるためのオブジェクト作成
+        let cors=Cors::default()
+                .allowed_origin_fn(|origin,_req_head|{
+                    true
+                })
+                .allowed_methods(vec!["GET","POST"])
+                .allowed_headers(vec![http::header::AUTHORIZATION,http::header::ACCEPT])
+                .allowed_header(http::header::CONTENT_TYPE)
+                .max_age(3600);
+
         App::new()
-        .service(index)
-        .service(post_index)
+            .wrap(cors)
+            .service(index)
+            .service(post_index)
     })
     .bind("0.0.0.0:81")?
     .run()
